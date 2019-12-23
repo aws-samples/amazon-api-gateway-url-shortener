@@ -1,0 +1,268 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Functionless URL Shortner
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Name of application (no spaces)
+    Default: shortener
+  ClientDomain:
+    Type: String
+    Description: The default domain to redirect to if URL not found.
+    Default: https://amazon.com
+  AddCache:
+    Type: String
+    Description: Enable Caching ( true | false )
+    Default: 'false'
+  AccessLogging:
+    Type: String
+    Description: Enable access logging to S3 via firehose
+    Default: 'false'
+
+Conditions:
+  AddCache: { "Fn::Equals" : [{"Ref" : "AddCache"}, "true"]}
+  AddLogging: { "Fn::Equals" : [{"Ref" : "AccessLogging"}, "true"]}
+
+Resources:
+  ###################################################################################################
+  ##   API Configuration                                                                           ##
+  ###################################################################################################
+  SiteAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      AccessLogSetting:
+        DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
+        Format: !If [ AddLogging, "{requestId:$context.requestId}", !Ref "AWS::NoValue" ]
+      CacheClusterEnabled: !If [ AddCache, true, false]
+      CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
+      MethodSettings:
+        - HttpMethod: "*"
+          ResourcePath: "/*"
+          CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
+          CachingEnabled: !If [ AddCache, true, false ]
+      DefinitionBody:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: './api.yaml'
+
+  ###################################################################################################
+  ##   URL Table                                                                                   ##
+  ###################################################################################################
+  LinkTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: owner
+          AttributeType: S
+      GlobalSecondaryIndexes:
+        - IndexName: OwnerIndex
+          KeySchema:
+            - AttributeName: owner
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+  
+  ###################################################################################################
+  ##   Dynamo DB Read Policy                                                                       ##
+  ###################################################################################################
+  DDBReadRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service: "apigateway.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: DDBReadPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Action:
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:Query
+              Effect: Allow
+              Resource:
+                - !GetAtt LinkTable.Arn
+                - !Sub
+                  - ${TableArn}/index/*
+                  - {TableArn: !GetAtt LinkTable.Arn}
+
+  ###################################################################################################
+  ##   Dynamo DB Read/Write Policy                                                                 ##
+  ###################################################################################################
+  DDBCrudRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service: "apigateway.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: DDBCrudPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Action:
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              Effect: Allow
+              Resource: !GetAtt LinkTable.Arn
+
+  ###################################################################################################
+  ##   S3 Bucket Write Policy                                                                      ##
+  ###################################################################################################
+  S3BucketWrite:
+    Type: "AWS::IAM::Role"
+    Condition: AddLogging
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service: "firehose.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: S3WritePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Action:
+              - S3:PutObject
+              Effect: Allow
+              Resource: !GetAtt LogBucket.Arn
+
+  ###################################################################################################
+  ##   Cognito user pool                                                                           ##
+  ###################################################################################################
+  UserPool:
+    Type: AWS::Cognito::UserPool 
+    Properties: 
+      UserPoolName: !Sub ${AppName}-UserPool 
+      Policies: 
+        PasswordPolicy: 
+          MinimumLength: 8
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes: 
+        - email 
+      Schema: 
+        - AttributeDataType: String 
+          Name: email 
+          Required: false
+
+  ###################################################################################################
+  ##   Cognito user pool domain                                                                    ##
+  ###################################################################################################
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties: 
+      Domain: !Ref AppName
+      UserPoolId: !Ref UserPool
+
+  ###################################################################################################
+  ##   Cognito user pool client                                                                    ##
+  ###################################################################################################
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient 
+    Properties: 
+      UserPoolId: !Ref UserPool 
+      ClientName: !Sub ${AppName}-UserPoolClient 
+      GenerateSecret: false
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - http://localhost:8080
+        - !Ref ClientDomain
+      LogoutURLs:
+        - http://localhost:8080
+        - !Ref ClientDomain
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+
+  ###################################################################################################
+  ##   S3 Bucket for optional logging                                                              ##
+  ###################################################################################################
+  LogBucket:
+    Type: AWS::S3::Bucket   
+    Condition: AddLogging
+
+  ###################################################################################################
+  ##   Kinesis Firehose for optional logging                                                       ##
+  ###################################################################################################
+  LogFireHose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Condition: AddLogging
+    Properties:
+      DeliveryStreamName: !Sub amazon-apigateway-${AppName}
+      S3DestinationConfiguration:
+        BucketARN: !GetAtt LogBucket.Arn
+        CompressionFormat: GZIP
+        RoleARN: !GetAtt S3BucketWrite.Arn
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 1
+
+
+###################################################################################################
+##   Template outputs                                                                            ##
+###################################################################################################
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL for linker"
+    Value: !Sub "https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  DDBReadRoleArn:
+    Description: "Role Arn for read access to DynamoDB"
+    Value: !GetAtt DDBReadRole.Arn
+
+  DDBCrudRoleArn:
+    Description: "Role Arn for crud access to DynamoDB"
+    Value: !GetAtt DDBCrudRole.Arn
+
+  UserPoolId: 
+    Description: Cognito User Pool Id 
+    Value: !Ref UserPool 
+    Export: 
+      Name: !Sub ${AppName}-UserPoolId
+ 
+  UserPoolArn: 
+    Description: Cognito User Pool ARN
+    Value: !GetAtt UserPool.Arn
+    Export: 
+      Name: !Sub ${AppName}-UserPoolArn
+
+  UserPoolClientId: 
+    Description: Cognito User Pool Client Id
+    Value: !Ref UserPoolClient 
+    Export: 
+      Name: !Sub ${AppName}-UserPoolClientId
