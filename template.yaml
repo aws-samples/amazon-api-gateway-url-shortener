@@ -15,14 +15,27 @@ Parameters:
     Type: String
     Description: Enable Caching ( true | false )
     Default: 'false'
-  AccessLogging:
+    AllowedValues:
+      - 'true'
+      - 'false'
+  AddAccessLogging:
     Type: String
-    Description: Enable access logging to S3 via firehose
+    Description: Enable access logging to S3 via firehose ( true | false )
     Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+  LogFormat:
+    Type: String
+    Description: Format for access logging
+    Default: "{ \"requestId\":\"$context.requestId\", \"ip\": \"$context.identity.sourceIp\", \
+      \"caller\":\"$context.identity.caller\", \"user\":\"$context.identity.user\",\"requestTime\":\"$context.requestTime\", \
+      \"httpMethod\":\"$context.httpMethod\",\"resourcePath\":\"$context.resourcePath\", \"status\":\"$context.status\", \
+      \"protocol\":\"$context.protocol\", \"responseLength\":\"$context.responseLength\" }"
 
 Conditions:
   AddCache: { "Fn::Equals" : [{"Ref" : "AddCache"}, "true"]}
-  AddLogging: { "Fn::Equals" : [{"Ref" : "AccessLogging"}, "true"]}
+  AddLogging: { "Fn::Equals" : [{"Ref" : "AddAccessLogging"}, "true"]}
 
 Resources:
   ###################################################################################################
@@ -36,7 +49,7 @@ Resources:
       TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
-        Format: !If [ AddLogging, "{requestId:$context.requestId}", !Ref "AWS::NoValue" ]
+        Format: !If [ AddLogging, !Ref LogFormat, !Ref "AWS::NoValue" ]
       CacheClusterEnabled: !If [ AddCache, true, false]
       CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
       MethodSettings:
@@ -153,9 +166,13 @@ Resources:
             Version: '2012-10-17'
             Statement:
               Action:
-              - S3:PutObject
+                - s3:PutObject
               Effect: Allow
-              Resource: !GetAtt LogBucket.Arn
+              Resource:
+                - !GetAtt LogBucket.Arn
+                - !Sub
+                  - ${Arn}/*
+                  - {Arn: !GetAtt LogBucket.Arn}
 
   ###################################################################################################
   ##   Cognito user pool                                                                           ##
@@ -238,31 +255,13 @@ Resources:
 ###################################################################################################
 Outputs:
   ApiUrl:
-    Description: "API Gateway endpoint URL for linker"
-    Value: !Sub "https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod"
-
-  DDBReadRoleArn:
-    Description: "Role Arn for read access to DynamoDB"
-    Value: !GetAtt DDBReadRole.Arn
-
-  DDBCrudRoleArn:
-    Description: "Role Arn for crud access to DynamoDB"
-    Value: !GetAtt DDBCrudRole.Arn
-
-  UserPoolId: 
-    Description: Cognito User Pool Id 
-    Value: !Ref UserPool 
-    Export: 
-      Name: !Sub ${AppName}-UserPoolId
+    Description: API Gateway endpoint URL for linker
+    Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
  
-  UserPoolArn: 
-    Description: Cognito User Pool ARN
-    Value: !GetAtt UserPool.Arn
-    Export: 
-      Name: !Sub ${AppName}-UserPoolArn
+  AuthDomain: 
+    Description: Domain used for authentication
+    Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
 
   UserPoolClientId: 
     Description: Cognito User Pool Client Id
-    Value: !Ref UserPoolClient 
-    Export: 
-      Name: !Sub ${AppName}-UserPoolClientId
+    Value: !Ref UserPoolClient
