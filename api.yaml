@@ -19,10 +19,27 @@ info:
   title: "URL Shortener"
   version: "1.0.0"
 
+x-amazon-apigateway-request-validators:
+  all:
+    validateRequestBody: true
+    validateRequestParameters: true
+  params-only:
+    validateRequestBody: false
+    validateRequestParameters: true
+
 paths:
   /{linkId}:
     ## URL redirector
     get:
+      summary: Get a url by ID and redirect
+      x-amazon-apigateway-request-validator: params-only
+      parameters:
+        - in: path
+          name: linkId
+          schema:
+            type: string
+          required: true
+          description: Short link ID for full URL
       responses:
         "302":
           description: "302 redirect"
@@ -44,7 +61,7 @@ paths:
           "200":
             statusCode: "302"
             responseParameters:
-              method.response.header.Location: { "Fn::Sub": "'${ClientDomain}'" }
+              method.response.header.Location: { "Fn::Sub": "'${ClientDomain}?error=url_not_found'" }
             responseTemplates:
               application/json: "#set($inputRoot = $input.path('$')) \
                 #if($inputRoot.toString().contains(\"Item\")) \
@@ -55,8 +72,11 @@ paths:
   /app:
     ## Get all links for user
     get:
+      summary: Fetch all links for authenticated user
       security:
       - UserAuthorizer: []
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
       responses:
         "200":
           description: "200 response"
@@ -94,8 +114,19 @@ paths:
 
     ## Create a new link
     post:
+      summary: Create new url
       security:
       - UserAuthorizer: []
+      x-amazon-apigateway-request-validator: all
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostBody'
       responses:
         "200":
           description: "200 response"
@@ -130,18 +161,20 @@ paths:
               method.response.header.Access-Control-Allow-Origin: "'*'"
             responseTemplates:
               application/json: "#set($inputRoot = $input.path('$')) \
-                #if($inputRoot.toString().contains(\"ConditionalCheckFailedException\")) \
-                {\"error\": true,\"message\": \"Link Id already exists\"}#else \
                 {\"id\":\"$inputRoot.Attributes.id.S\", \
                 \"url\":\"$inputRoot.Attributes.url.S\",
                 \"timestamp\":\"$inputRoot.Attributes.timestamp.S\", \
-                \"owner\":\"$inputRoot.Attributes.owner.S\"}#end"
+                \"owner\":\"$inputRoot.Attributes.owner.S\"}"
           "400":
             statusCode: "400"
             responseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
-            responseTemplate:
-              application/json: "{\"error\": {\"message\":\"Incorrect value passed for 'id' or 'url'.\"}}"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')) \
+                #if($inputRoot.toString().contains(\"ConditionalCheckFailedException\")) \
+                #set($context.responseOverride.status = 200)
+                {\"error\": true,\"message\": \"URL link already exists\"} \
+                #end"
         type: "aws"
 
     ## Options for get and post that do not have a linkId
@@ -176,8 +209,13 @@ paths:
   /app/{linkId}:
     ## Delete link
     delete:
+      summary: Delete url
       security:
       - UserAuthorizer: []
+      x-amazon-apigateway-request-validator: params-only
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+        - $ref: '#/components/parameters/linkIdHeader'
       responses:
         "200":
           description: "200 response"
@@ -212,8 +250,20 @@ paths:
         type: "aws"
     ## Update links
     put:
+      summary: Update specific URL
       security:
       - UserAuthorizer: []
+      x-amazon-apigateway-request-validator: all
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutBody'
+      parameters:
+        - $ref: '#/components/parameters/authHeader'
+        - $ref: '#/components/parameters/linkIdHeader'
       responses:
         "200":
           description: "301 response"
@@ -284,6 +334,51 @@ paths:
               method.response.header.Access-Control-Allow-Headers: "'*'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
         type: "mock"
+
+## Validation models
+components:
+  schemas:
+    PostBody:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+      required:
+        - id
+        - url
+    PutBody:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        timestamp:
+          type: string
+        owner:
+          type: string
+      required:
+        - id
+        - url
+        - timestamp
+        - owner
+  parameters:
+    authHeader:
+      in: header
+      name: Authorization
+      required: true
+      description: Contains authorization token
+      schema:
+        type: string
+    linkIdHeader:
+      in: path
+      name: linkId
+      required: true
+      description: Short link ID for full URL
+      schema:
+        type: string
 
 ## Authorizer definition
 securityDefinitions:
