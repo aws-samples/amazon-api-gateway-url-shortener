@@ -24,10 +24,6 @@ Parameters:
     Type: String
     Description: Name of application (no spaces)
     Default: shortener
-  ClientDomain:
-    Type: String
-    Description: The default domain to redirect to if URL not found.
-    Default: https://amazon.com
   AddCache:
     Type: String
     Description: Enable Caching ( true | false )
@@ -46,10 +42,23 @@ Parameters:
     Type: String
     Description: Format for access logging
     Default: $context.requestId
+  AddClient:
+    Type: String
+    Description: Include basic Vuejs client for interacting with app
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+  OauthToken:
+    Type: String
+    Description: GitHub Repository URL
+    NoEcho: true
+    Default: 'empty'
 
 Conditions:
   AddCache: { "Fn::Equals" : [{"Ref" : "AddCache"}, "true"]}
   AddLogging: { "Fn::Equals" : [{"Ref" : "AddAccessLogging"}, "true"]}
+  AddClient: { "Fn::Equals" : [{"Ref" : "AddClient"}, "true"]}
 
 Resources:
   ###################################################################################################
@@ -229,10 +238,10 @@ Resources:
         - COGNITO
       CallbackURLs:
         - http://localhost:8080
-        - !Ref ClientDomain
+        - !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
       LogoutURLs:
         - http://localhost:8080
-        - !Ref ClientDomain
+        - !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
         - code
@@ -263,6 +272,77 @@ Resources:
           IntervalInSeconds: 60
           SizeInMBs: 1
 
+  ###################################################################################################
+  ##   Client Application via Amplify Console                                                      ##
+  ###################################################################################################
+
+  AmplifyRole:
+    Type: AWS::IAM::Role
+    Condition: AddClient
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - amplify.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: Amplify
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: "amplify:*"
+                Resource: "*"
+
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Condition: AddClient
+    Properties:
+      Name: Url-Shortner-Client
+      Description: Basic client for URL Shortner
+      Repository: https://github.com/singledigit/url-shortener-client.git
+      OauthToken: !Ref OauthToken
+      EnvironmentVariables:
+        - Name: VUE_APP_NAME
+          Value: !Ref AppName
+        # - Name: VUE_APP_CLIENT_ID
+        #   Value: !Ref UserPoolClient
+        - Name: VUE_APP_API_ROOT
+          Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
+        - Name: VUE_APP_AUTH_DOMAIN
+          Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
+      BuildSpec: |-
+        version: 0.1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - npm ci
+            build:
+              commands:
+                - npm run build
+          artifacts:
+            baseDirectory: dist
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - node_modules/**/*
+      IAMServiceRole: !GetAtt AmplifyRole.Arn
+
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      BranchName: master
+      AppId: !GetAtt AmplifyApp.AppId
+      Description: Master Branch
+      EnableAutoBuild: true
+
+
 
 ###################################################################################################
 ##   Template outputs                                                                            ##
@@ -279,3 +359,7 @@ Outputs:
   UserPoolClientId: 
     Description: Cognito User Pool Client Id
     Value: !Ref UserPoolClient
+
+  ClientDomainAddress:
+    Description: Domain for client
+    Value: !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
