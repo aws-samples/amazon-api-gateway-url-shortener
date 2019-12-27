@@ -27,7 +27,7 @@ Parameters:
   ClientDomain:
     Type: String
     Description: The default domain to redirect to if URL not found.
-    Default: https://amazon.com
+    Default: http://localhost:8080
   AddCache:
     Type: String
     Description: Enable Caching ( true | false )
@@ -42,10 +42,6 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-  LogFormat:
-    Type: String
-    Description: Format for access logging
-    Default: $context.requestId
 
 Conditions:
   AddCache: { "Fn::Equals" : [{"Ref" : "AddCache"}, "true"]}
@@ -63,7 +59,7 @@ Resources:
       TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
-        Format: !If [ AddLogging, !Ref LogFormat, !Ref "AWS::NoValue" ]
+        Format: !If [ AddLogging, '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }', !Ref "AWS::NoValue" ]
       CacheClusterEnabled: !If [ AddCache, true, false]
       CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
       MethodSettings:
@@ -228,10 +224,8 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
-        - http://localhost:8080
         - !Ref ClientDomain
       LogoutURLs:
-        - http://localhost:8080
         - !Ref ClientDomain
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
