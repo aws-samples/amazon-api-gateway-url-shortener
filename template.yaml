@@ -262,14 +262,18 @@ Resources:
 ##   Template outputs                                                                            ##
 ###################################################################################################
 Outputs:
-  ApiUrl:
+  VUE_APP_NAME:
+    Description: Name of your application
+    Value: !Ref AppName
+
+  VUE_APP_API_ROOT:
     Description: API Gateway endpoint URL for linker
     Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
  
-  AuthDomain: 
+  VUE_APP_AUTH_DOMAIN: 
     Description: Domain used for authentication
     Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
 
-  UserPoolClientId: 
+  VUE_APP_CLIENT_ID: 
     Description: Cognito User Pool Client Id
     Value: !Ref UserPoolClient
