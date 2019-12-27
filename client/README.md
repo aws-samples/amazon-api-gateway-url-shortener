@@ -14,26 +14,40 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 
+# URL Shortener Client
+This application is a simple Vuejs application that interacts with the functionless url shortener.
 
-## Project setup
+## Requirements
+* [Node](https://nodejs.org)
+* [Vue CLI](https://cli.vuejs.org/)
+
+If Node with NPM is already installed simply run.
 ```
-npm install
+npm install -g @vue/cli
 ```
 
-### Compiles and hot-reloads for development
+## Setup
+**The following commands need to be run from within the `client` folder.**
+
+### 1. Update the environment variables in the `.env` file.
+The client needs some information about the backend. These values were output when you deployed the backend. Update the `.env` file. when you are done it should look "something" like this.
+
+```
+VUE_APP_NAME=SlipLink
+VUE_APP_API_ROOT=https://fd7c8be3rg.execute-api.us-west-2.amazonaws.com/Prod
+VUE_APP_AUTH_DOMAIN=https://shortener.auth.us-west-2.amazoncognito.com
+VUE_APP_CLIENT_ID=432p7npp8tf7a8pnb0hg5cbegl
+```
+
+### 2. Install NPM dependencies
+
+```
+npm i
+```
+
+### 3. Start the local server
 ```
 npm run serve
 ```
 
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+### 4. Open the webpage at [http://localhost:8080](http://localhost:8080)
