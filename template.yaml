@@ -14,7 +14,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Functionless URL Shortner
@@ -31,14 +30,14 @@ Parameters:
   AddCache:
     Type: String
     Description: Enable Caching ( true | false )
-    Default: 'false'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
   AddAccessLogging:
     Type: String
     Description: Enable access logging to S3 via firehose ( true | false )
-    Default: 'false'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
@@ -55,7 +54,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
-      EndpointConfiguration: REGIONAL
+      EndpointConfiguration: EDGE
       TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
@@ -65,6 +64,13 @@ Resources:
       MethodSettings:
         - HttpMethod: "*"
           ResourcePath: "/*"
+          LoggingLevel: ERROR
+          ThrottlingRateLimit: 2000
+          ThrottlingBurstLimit: 1000
+        - HttpMethod: "GET"
+          ResourcePath: "/{linkId}"
+          ThrottlingRateLimit: 8000
+          ThrottlingBurstLimit: 4000
           CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
           CachingEnabled: !If [ AddCache, true, false ]
       DefinitionBody:

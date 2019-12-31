@@ -30,7 +30,11 @@ npm install -g @vue/cli
 **The following commands need to be run from within the `client` folder.**
 
 ### 1. Update the environment variables in the `.env` file.
-The client needs some information about the backend. These values were output when you deployed the backend. Update the `.env` file. when you are done it should look "something" like this.
+The client needs some information about the backend. These values were output when you deployed the backend. If you need them again, simply run in your terminal:
+```
+aws cloudformation describe-stacks --stack-name URLShortener
+```
+Update and save the `.env` file. when you are done it should look "something" like this.
 
 ```
 VUE_APP_NAME=SlipLink

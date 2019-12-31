@@ -37,7 +37,9 @@ Use the guided deployment the first time you deploy
 sam deploy -g
 ```
 
-#### Choose the following options
+#### CChoopse options
+You can choose the default for all options. If you do not want caching or access logging, set them to `false`
+
 ```bash
 ## The name of the CloudFormation stack
 Stack Name [URLShortener]:
@@ -52,10 +54,10 @@ Parameter AppName [shortener]:
 Parameter ClientDomain [http://localhost:8080]:
 
 ## Optional: enable a cache cluster with .5GB storage and a TTL of 300 seconds ( true | false )
-Parameter AddCache [false]: true
+Parameter AddCache [true]:
 
 ## Optional: enable access logging via Kinesis Firehose to an S3 bucket ( true | false )
-Parameter AddAccessLogging [false]: true
+Parameter AddAccessLogging [true]:
 
 ## Shows you resources changes to be deployed and require a 'Y' to initiate deploy
 Confirm changes before deploy [y/N]: 
