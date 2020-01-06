@@ -14,7 +14,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Functionless URL Shortner
@@ -27,25 +26,14 @@ Parameters:
   AddCache:
     Type: String
     Description: Enable Caching ( true | false )
-    Default: 'false'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
   AddAccessLogging:
     Type: String
     Description: Enable access logging to S3 via firehose ( true | false )
-    Default: 'false'
-    AllowedValues:
-      - 'true'
-      - 'false'
-  LogFormat:
-    Type: String
-    Description: Format for access logging
-    Default: $context.requestId
-  AddClient:
-    Type: String
-    Description: Include basic Vuejs client for interacting with app
-    Default: 'false'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
@@ -68,16 +56,23 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
-      EndpointConfiguration: REGIONAL
+      EndpointConfiguration: EDGE
       TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
-        Format: !If [ AddLogging, !Ref LogFormat, !Ref "AWS::NoValue" ]
+        Format: !If [ AddLogging, '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }', !Ref "AWS::NoValue" ]
       CacheClusterEnabled: !If [ AddCache, true, false]
       CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
       MethodSettings:
         - HttpMethod: "*"
           ResourcePath: "/*"
+          LoggingLevel: ERROR
+          ThrottlingRateLimit: 2000
+          ThrottlingBurstLimit: 1000
+        - HttpMethod: "GET"
+          ResourcePath: "/{linkId}"
+          ThrottlingRateLimit: 8000
+          ThrottlingBurstLimit: 4000
           CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
           CachingEnabled: !If [ AddCache, true, false ]
       DefinitionBody:
@@ -348,16 +343,20 @@ Resources:
 ##   Template outputs                                                                            ##
 ###################################################################################################
 Outputs:
-  ApiUrl:
-    Description: API Gateway endpoint URL for linker
+  VueAppName:
+    Description: (VUE_APP_NAME) Name of your application
+    Value: !Ref AppName
+
+  VueAppAPIRoot:
+    Description: (VUE_APP_API_ROOT) API Gateway endpoint URL for linker
     Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
  
-  AuthDomain: 
-    Description: Domain used for authentication
+  VueAppAuthDomain: 
+    Description: (VUE_APP_AUTH_DOMAIN) Domain used for authentication
     Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
 
-  UserPoolClientId: 
-    Description: Cognito User Pool Client Id
+  VueAppClientId: 
+    Description: (VUE_APP_CLIENT_ID) Cognito User Pool Client Id
     Value: !Ref UserPoolClient
 
   ClientDomainAddress:
