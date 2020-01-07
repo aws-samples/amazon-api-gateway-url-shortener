@@ -41,10 +41,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
           </header>
           <div class="card-content">
             <div class="content">
-              <strong>Link:</strong> <a :href="apiUrl + '/' + link.id" target="_blank">{{apiUrl + '/' + link.id}}</a>
-              <strong>Target:</strong> <a :href="link.url" target="_blank">{{link.url}}</a>
+              {{link.url}}
               <div class="is-size-7">
-              <strong>Added:</strong> <time>{{link.timestamp | formatDate}}</time>
+              <time>{{link.timestamp | formatDate}}</time>
               </div>
             </div>
           </div>
