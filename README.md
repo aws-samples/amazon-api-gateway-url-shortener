@@ -39,7 +39,7 @@ This app creates a url shortener without using any compute. All business logic i
     **Be sure and store you new token in a place that you can find it.**
 
 ### Deploying
-In the terminal, use the guided deployment the first time you deploy
+In the terminal, use the SAM CLI guided deployment the first time you deploy
 ```bash
 sam deploy -g
 ```
