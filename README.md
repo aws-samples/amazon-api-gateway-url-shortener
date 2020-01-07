@@ -15,7 +15,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 
 # Functionless URL Shortener
-This app creates a url shortener without using any compute. All business logic is handled at the Amazon API Gateway level. The basic app will create an API gateway instance utilizing Cognito for authentication and authorization. It will also create a DyanmoDB table for data storage.
+This app creates a URL shortener without using any compute. All business logic is handled at the Amazon API Gateway level. The basic app will create an API Gateway instance utilizing Cognito for authentication and authorization. It will also create an Amazon DynamoDB table for data storage.
 
 ## The Backend
 
@@ -79,18 +79,18 @@ Allow SAM CLI IAM role creation [Y/n]:
 Save arguments to samconfig.toml [Y/n]:
 ```
 
-SAM will then deploy the cloudformation stack to your AWS account and provide required outputs for the included client.
+SAM will then deploy the AWS CloudFormation stack to your AWS account and provide required outputs for the included client.
 
 After the first deploy you may redploy using `sam deploy` or redeploy with different options using `sam deploy -g`.
 
 ### Access Logging
-I chose to use the firehose option to drop to S3 so you can add Kinesis data analytics if desired.
+I chose to use the Firehose option to drop to S3 so you can add Kinesis data analytics if desired.
 
 You can modify the log type and format in the API Gateway console under the proper stage. *Note: redploying from SAM will overwrite those changes*
 
 
 ## The Client
-The client is a simple Vusejs application thati nterfaces with the backend and allows you to add and manage new URL for shortening. The client is hosted using Amplify Console. To avoid circular dependencies,we need to provide some information for the client after the rest of the stack has built. The information was provided at the end of the `sam deploy` process. If you do not have the information you can run:
+The client is a simple Vusejs application thati nterfaces with the backend and allows you to add and manage new URL for shortening. The client is hosted using Amplify Console. To avoid circular dependencies, we need to provide some information for the client after the rest of the stack has built. The information was provided at the end of the `sam deploy` process. If you do not have the information you can run:
 
 ```bash
 aws cloudformation describe-stacks --stack-name URLShortener
@@ -112,12 +112,12 @@ VUE_APP_NAME=<VueAppName>\
 1. Open the [Amplify Console page](https://us-west-2.console.aws.amazon.com/amplify/home)
 1. On the left side, under **All apps**, choose *Url-Shortner-Client*
 1. Under **App settings** choose *Environment variables*
-1. Click the *manage variables* button
-1. Click *add variable*
+1. Choose the *manage variables* button
+1. Choose *add variable*
 1. Fill in the *variable* and it's corresponding *Value*
 1. Leave defaults for *Branches* and *Actions*
 1. Repeat for all four variables
-1. Click save
+1. Choose save
 
 ### Starting the first deployment
 After deploying the CloudFormation template, you need to go into the Amplify Console and trigger a build. The CloudFormation template can provision the resources, but can’t trigger a build since it creates resources but cannot trigger actions. This can be done via the AWS CLI.
