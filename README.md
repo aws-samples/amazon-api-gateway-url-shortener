@@ -84,13 +84,27 @@ SAM will then deploy the AWS CloudFormation stack to your AWS account and provid
 After the first deploy you may redploy using `sam deploy` or redeploy with different options using `sam deploy -g`.
 
 ### Access Logging
-I chose to use the Firehose option to drop to S3 so you can add Kinesis data analytics if desired.
+Amazon Kinesis Data Firehose so Kinesis data analytics can be implemented if desired. The current log format is:
+```json
+{
+    "requestId":"$context.requestId",
+    "ip": "$context.identity.sourceIp",
+    "caller":"$context.identity.caller",
+    "user":"$context.identity.user",
+    "requestTime":"$context.requestTime",
+    "httpMethod":"$context.httpMethod",
+    "resourcePath":"$context.resourcePath",
+    "status":"$context.status",
+    "protocol":"$context.protocol",
+    "responseLength":"$context.responseLength"
+}
+```
 
-You can modify the log type and format in the API Gateway console under the proper stage. *Note: redploying from SAM will overwrite those changes*
+The format can be modified in the SAM template.yaml and be redeployed with `sam deploy`
 
 
 ## The Client
-The client is a simple Vusejs application thati nterfaces with the backend and allows you to add and manage new URL for shortening. The client is hosted using Amplify Console. To avoid circular dependencies, we need to provide some information for the client after the rest of the stack has built. The information was provided at the end of the `sam deploy` process. If you do not have the information you can run:
+The client is a Vusejs application that interfaces with the backend and allows you to authenticate and manage URL links. The client is hosted using Amplify Console. To avoid circular dependencies, we need to provide some information for the client after the rest of the stack is built. The information needed is provided at the end of the deploy process. If you do not have the information you can run the following:
 
 ```bash
 aws cloudformation describe-stacks --stack-name URLShortener
@@ -133,7 +147,16 @@ aws amplify start-job --app-id <MyAmplifyAppId> --branch-name master --job-type 
 1. On the left side, under **All apps**, choose *Url-Shortner-Client*
 1. Click *Run build*
 
-*Note: this is only required for the first build
+*Note: this is only required for the first build subsequent client builds will be triggered when updates are committed to your forked repository.
 
 ## The Local Client
 The client can also be run locally. See [./client/README.md](./client/README.md) for instructions.
+
+## Cleanup
+1. Open the <a href="https://us-west-2.console.aws.amazon.com/cloudformation/home" target="_blank">CloudFormation console</a>
+1. Locate a stack named *URLShortener*
+1. Select the radio option next to it
+1. Select **Delete**
+1. Select **Delete stack** to confirm
+
+*Note: If you opted to have access logs (on by default), you may have to delete the S3 bucket manually.
