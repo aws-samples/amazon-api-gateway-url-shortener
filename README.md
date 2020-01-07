@@ -20,17 +20,17 @@ This app creates a URL shortener without using any compute. All business logic i
 ## The Backend
 
 ### Services Used
-* [Amazon API Gatweay](https://aws.amazon.com/api-gateway/)
-* [Amazon Cognito](https://aws.amazon.com/cognito/)
-* [Amazon DynamoDB](https://aws.amazon.com/dynamodb/)
-* [Amplify Console](https://aws.amazon.com/amplify/console/)
-* [Amazon Kinesis Data Firehose](https://aws.amazon.com/kinesis/data-firehose/) *optional*
-* [Amazon S3](https://aws.amazon.com/s3/) *optional*
+* <a href="https://aws.amazon.com/api-gateway/" target="_blank">Amazon API Gateway</a>
+* <a href="https://aws.amazon.com/cognito/" target="_blank">Amazon Cognito</a>
+* <a href="https://aws.amazon.com/dynamodb/" target="_bank">Amazon DynamoDB</a>
+* <a href="https://aws.amazon.com/amplify/console/" target="_blank">AWS Amplify Console</a>
+* <a href="https://aws.amazon.com/kinesis/data-firehose/" target="_blank">Amazon Kinesis Data Firehose</a> *optional*
+* <a href="https://aws.amazon.com/s3/" target="_blank">Amazon S3</a> *optional*
 
 
 ### Requirements for deployment
-* [AWS CLI](https://aws.amazon.com/cli/)
-* [AWS SAM CLI v0.37.0+](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+* <a href="https://aws.amazon.com/cli/" target="_blank">AWS CLI</a>
+* <a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html" target="_blank">AWS SAM CLI v0.37.0+</a>
 * Forked copy of this repository. Instructions for forking a GitHib repository can be found <a href="https://help.github.com/en/github/getting-started-with-github/fork-a-repo" target="_blank">here</a>
 * A GitHub personal access token with the *repo* scope as shown below. Instructions for creating a personal access token can be found <a href="https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line#creating-a-token" target="blank">here</a>
 
@@ -129,7 +129,7 @@ aws amplify start-job --app-id <MyAmplifyAppId> --branch-name master --job-type 
 ```
 
 #### Option 2: Amplify Console page
-1. Open the [Amplify Console page](https://us-west-2.console.aws.amazon.com/amplify/home)
+1. Open the <a href="https://us-west-2.console.aws.amazon.com/amplify/home" target="_blank">Amplify Console page</a>
 1. On the left side, under **All apps**, choose *Url-Shortner-Client*
 1. Click *Run build*
 
