@@ -31,8 +31,8 @@ This app creates a URL shortener without using any compute. All business logic i
 ### Requirements for deployment
 * [AWS CLI](https://aws.amazon.com/cli/)
 * [AWS SAM CLI v0.37.0+](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* Forked copy of this repository. Instructions for forking a GitHib repository can be found [here](https://help.github.com/en/github/getting-started-with-github/fork-a-repo)
-* A GitHub personal access token. Instructions for creating a personal access token can be found [here](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line#creating-a-token)
+* Forked copy of this repository. Instructions for forking a GitHib repository can be found <a href="https://help.github.com/en/github/getting-started-with-github/fork-a-repo" target="_blank">here</a>
+* A GitHub personal access token with the *repo* scope as shown below. Instructions for creating a personal access token can be found <a href="https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line#creating-a-token" target="blank">here</a>
 
     ![Personal access token scopes](./assets/pat.png)
 
