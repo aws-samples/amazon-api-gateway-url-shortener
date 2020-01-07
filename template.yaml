@@ -18,6 +18,9 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Functionless URL Shortner
 
+###################################################################################################
+##   Template Parameters                                                                         ##
+###################################################################################################
 Parameters:
   AppName:
     Type: String
@@ -37,51 +40,56 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
+  GithubRepository:
+    Type: String
+    Description: GitHub repository URL
   OauthToken:
     Type: String
-    Description: GitHub Repository URL
+    Description: Github personal key
     NoEcho: true
 
+###################################################################################################
+##   Template Conditions                                                                         ##
+###################################################################################################
 Conditions:
   AddCache: { "Fn::Equals" : [{"Ref" : "AddCache"}, "true"]}
   AddLogging: { "Fn::Equals" : [{"Ref" : "AddAccessLogging"}, "true"]}
 
+###################################################################################################
+##   Template Resources                                                                          ##
+###################################################################################################
 Resources:
-  ###################################################################################################
-  ##   API Configuration                                                                           ##
-  ###################################################################################################
-  # SiteAPI:
-  #   Type: AWS::Serverless::Api
-  #   Properties:
-  #     StageName: Prod
-  #     EndpointConfiguration: EDGE
-  #     TracingEnabled: true
-  #     AccessLogSetting:
-  #       DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
-  #       Format: !If [ AddLogging, '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }', !Ref "AWS::NoValue" ]
-  #     CacheClusterEnabled: !If [ AddCache, true, false]
-  #     CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
-  #     MethodSettings:
-  #       - HttpMethod: "*"
-  #         ResourcePath: "/*"
-  #         LoggingLevel: ERROR
-  #         ThrottlingRateLimit: 2000
-  #         ThrottlingBurstLimit: 1000
-  #       - HttpMethod: "GET"
-  #         ResourcePath: "/{linkId}"
-  #         ThrottlingRateLimit: 8000
-  #         ThrottlingBurstLimit: 4000
-  #         CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
-  #         CachingEnabled: !If [ AddCache, true, false ]
-  #     DefinitionBody:
-  #       'Fn::Transform':
-  #         Name: 'AWS::Include'
-  #         Parameters:
-  #           Location: './api.yaml'
+  ##   API Gateway                                                                                 
+  SiteAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      EndpointConfiguration: EDGE
+      TracingEnabled: true
+      AccessLogSetting:
+        DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
+        Format: !If [ AddLogging, '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }', !Ref "AWS::NoValue" ]
+      CacheClusterEnabled: !If [ AddCache, true, false]
+      CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
+      MethodSettings:
+        - HttpMethod: "*"
+          ResourcePath: "/*"
+          LoggingLevel: ERROR
+          ThrottlingRateLimit: 2000
+          ThrottlingBurstLimit: 1000
+        - HttpMethod: "GET"
+          ResourcePath: "/{linkId}"
+          ThrottlingRateLimit: 8000
+          ThrottlingBurstLimit: 4000
+          CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
+          CachingEnabled: !If [ AddCache, true, false ]
+      DefinitionBody:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: './api.yaml'
 
-  ###################################################################################################
-  ##   URL Table                                                                                   ##
-  ###################################################################################################
+  ##   URL DynamoDB Table
   LinkTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -102,9 +110,114 @@ Resources:
           Projection:
             ProjectionType: ALL
   
-  ###################################################################################################
-  ##   Dynamo DB Read Policy                                                                       ##
-  ###################################################################################################
+  ##   Cognito user pool
+  UserPool:
+    Type: AWS::Cognito::UserPool 
+    Properties: 
+      UserPoolName: !Sub ${AppName}-UserPool 
+      Policies: 
+        PasswordPolicy: 
+          MinimumLength: 8
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes: 
+        - email 
+      Schema: 
+        - AttributeDataType: String 
+          Name: email 
+          Required: false
+
+  ##   Cognito user pool domain
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties: 
+      Domain: !Ref AppName
+      UserPoolId: !Ref UserPool
+
+  ##   Cognito user pool client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient 
+    Properties: 
+      UserPoolId: !Ref UserPool 
+      ClientName: !Sub ${AppName}-UserPoolClient 
+      GenerateSecret: false
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - http://localhost:8080
+        - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
+      LogoutURLs:
+        - http://localhost:8080
+        - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+
+  ##   S3 Bucket for optional logging
+  LogBucket:
+    Type: AWS::S3::Bucket   
+    Condition: AddLogging
+
+  ##   Kinesis Firehose for optional logging
+  LogFireHose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Condition: AddLogging
+    Properties:
+      DeliveryStreamName: !Sub amazon-apigateway-${AppName}
+      S3DestinationConfiguration:
+        BucketARN: !GetAtt LogBucket.Arn
+        CompressionFormat: GZIP
+        RoleARN: !GetAtt S3BucketWrite.Arn
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 1
+
+
+  ##   Amplify Application for hosting
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: Url-Shortner-Client
+      Description: Basic client for URL Shortner
+      Repository: https://github.com/aws-samples/amazon-api-gateway-url-shortener
+      AccessToken: !Ref OauthToken
+      BuildSpec: |-
+        version: 0.1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - cd client
+                - npm ci
+            build:
+              commands:
+                - npm run build
+          artifacts:
+            baseDirectory: client/dist
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - node_modules/**/*
+      IAMServiceRole: !GetAtt AmplifyRole.Arn
+
+  ##   Amolify Branch for hosting
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      BranchName: master
+      AppId: !GetAtt AmplifyApp.AppId
+      Description: Master Branch
+      EnableAutoBuild: true
+
+###################################################################################################
+##   IAM Roles                                                                                   ##
+###################################################################################################
+
+  ##   Dynamo DB Read Role
   DDBReadRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -133,9 +246,7 @@ Resources:
                   - ${TableArn}/index/*
                   - {TableArn: !GetAtt LinkTable.Arn}
 
-  ###################################################################################################
-  ##   Dynamo DB Read/Write Policy                                                                 ##
-  ###################################################################################################
+  ##   Dynamo DB Read/Write Role
   DDBCrudRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -160,9 +271,7 @@ Resources:
               Effect: Allow
               Resource: !GetAtt LinkTable.Arn
 
-  ###################################################################################################
-  ##   S3 Bucket Write Policy                                                                      ##
-  ###################################################################################################
+  ##   S3 Bucket Write Policy
   S3BucketWrite:
     Type: "AWS::IAM::Role"
     Condition: AddLogging
@@ -190,85 +299,7 @@ Resources:
                   - ${Arn}/*
                   - {Arn: !GetAtt LogBucket.Arn}
 
-  ###################################################################################################
-  ##   Cognito user pool                                                                           ##
-  ###################################################################################################
-  # UserPool:
-  #   Type: AWS::Cognito::UserPool 
-  #   Properties: 
-  #     UserPoolName: !Sub ${AppName}-UserPool 
-  #     Policies: 
-  #       PasswordPolicy: 
-  #         MinimumLength: 8
-  #     AutoVerifiedAttributes:
-  #       - email
-  #     UsernameAttributes: 
-  #       - email 
-  #     Schema: 
-  #       - AttributeDataType: String 
-  #         Name: email 
-  #         Required: false
-
-  ###################################################################################################
-  ##   Cognito user pool domain                                                                    ##
-  ###################################################################################################
-  # UserPoolDomain:
-  #   Type: AWS::Cognito::UserPoolDomain
-  #   Properties: 
-  #     Domain: !Ref AppName
-  #     UserPoolId: !Ref UserPool
-
-  ###################################################################################################
-  ##   Cognito user pool client                                                                    ##
-  ###################################################################################################
-  # UserPoolClient:
-  #   Type: AWS::Cognito::UserPoolClient 
-  #   Properties: 
-  #     UserPoolId: !Ref UserPool 
-  #     ClientName: !Sub ${AppName}-UserPoolClient 
-  #     GenerateSecret: false
-  #     SupportedIdentityProviders:
-  #       - COGNITO
-  #     CallbackURLs:
-  #       - http://localhost:8080
-  #       - !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
-  #     LogoutURLs:
-  #       - http://localhost:8080
-  #       - !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
-  #     AllowedOAuthFlowsUserPoolClient: true
-  #     AllowedOAuthFlows:
-  #       - code
-  #     AllowedOAuthScopes:
-  #       - email
-  #       - openid
-
-  ###################################################################################################
-  ##   S3 Bucket for optional logging                                                              ##
-  ###################################################################################################
-  LogBucket:
-    Type: AWS::S3::Bucket   
-    Condition: AddLogging
-
-  ###################################################################################################
-  ##   Kinesis Firehose for optional logging                                                       ##
-  ###################################################################################################
-  LogFireHose:
-    Type: AWS::KinesisFirehose::DeliveryStream
-    Condition: AddLogging
-    Properties:
-      DeliveryStreamName: !Sub amazon-apigateway-${AppName}
-      S3DestinationConfiguration:
-        BucketARN: !GetAtt LogBucket.Arn
-        CompressionFormat: GZIP
-        RoleARN: !GetAtt S3BucketWrite.Arn
-        BufferingHints:
-          IntervalInSeconds: 60
-          SizeInMBs: 1
-
-  ###################################################################################################
-  ##   Client Application via Amplify Console                                                      ##
-  ###################################################################################################
-
+  ##   Amplify Hosting Role
   AmplifyRole:
     Type: AWS::IAM::Role
     Properties:
@@ -290,73 +321,31 @@ Resources:
                 Action: "amplify:*"
                 Resource: "*"
 
-  AmplifyApp:
-    Type: AWS::Amplify::App
-    Properties:
-      Name: Url-Shortner-Client
-      Description: Basic client for URL Shortner
-      Repository: https://github.com/singledigit/url-shortener-client.git
-      OauthToken: !Ref OauthToken
-      EnvironmentVariables:
-        - Name: VUE_APP_NAME
-          Value: !Ref AppName
-        # - Name: VUE_APP_CLIENT_ID
-        #   Value: !Ref UserPoolClient
-        # - Name: VUE_APP_API_ROOT
-        #   Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
-        # - Name: VUE_APP_AUTH_DOMAIN
-        #   Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
-      BuildSpec: |-
-        version: 0.1
-        frontend:
-          phases:
-            preBuild:
-              commands:
-                - cd client
-                - npm ci
-            build:
-              commands:
-                - cd client
-                - npm run build
-          artifacts:
-            baseDirectory: client/dist
-            files:
-              - '**/*'
-          cache:
-            paths:
-              - client/node_modules/**/*
-      IAMServiceRole: !GetAtt AmplifyRole.Arn
-
-  AmplifyBranch:
-    Type: AWS::Amplify::Branch
-    Properties:
-      BranchName: master
-      AppId: !GetAtt AmplifyApp.AppId
-      Description: Master Branch
-      EnableAutoBuild: true
-
-
-
 ###################################################################################################
 ##   Template outputs                                                                            ##
 ###################################################################################################
+
 Outputs:
   VueAppName:
-    Description: (VUE_APP_NAME) Name of your application
+    Description: Name of your application
     Value: !Ref AppName
 
-  # VueAppAPIRoot:
-  #   Description: (VUE_APP_API_ROOT) API Gateway endpoint URL for linker
-  #   Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
+  VueAppAPIRoot:
+    Description: API Gateway endpoint URL for linker
+    Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
  
-  # VueAppAuthDomain: 
-  #   Description: (VUE_APP_AUTH_DOMAIN) Domain used for authentication
-  #   Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
+  VueAppAuthDomain: 
+    Description: Domain used for authentication
+    Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
 
-  # VueAppClientId: 
-  #   Description: (VUE_APP_CLIENT_ID) Cognito User Pool Client Id
-  #   Value: !Ref UserPoolClient
+  VueAppClientId: 
+    Description: Cognito User Pool Client Id
+    Value: !Ref UserPoolClient
 
   ClientDomainAddress:
     Description: Domain for client
     Value: !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
+
+  AmplifyAppId:
+    Description: Amplify application ID
+    Value: !GetAtt AmplifyApp.AppId
