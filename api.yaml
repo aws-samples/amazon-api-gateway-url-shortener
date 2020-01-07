@@ -61,7 +61,7 @@ paths:
           "200":
             statusCode: "302"
             responseParameters:
-              method.response.header.Location: {"Fn::Sub": [master.${ampDomain}?error=url_not_found, {ampDomain: "Fn::GetAtt": ["AmplifyApp", "DefaultDomain"]}]}
+              method.response.header.Location: {"Fn::Sub": ["master.${ampDomain}?error=url_not_found", { "ampDomain", {"Fn::GetAtt":["AmplifyApp", "DefaultDomain"]} }]}
             responseTemplates:
               application/json: "#set($inputRoot = $input.path('$')) \
                 #if($inputRoot.toString().contains(\"Item\")) \
