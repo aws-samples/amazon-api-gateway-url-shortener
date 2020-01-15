@@ -144,10 +144,8 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       CallbackURLs:
-        - http://localhost:8080
         - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
       LogoutURLs:
-        - http://localhost:8080
         - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:

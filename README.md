@@ -157,9 +157,6 @@ aws amplify get-job --app-id <MyAmplifyAppId> --branch-name master --job-id <Job
 
 *Note: this is only required for the first build subsequent client builds will be triggered when updates are committed to your forked repository.
 
-## The Local Client
-The client can also be run locally. See [./client/README.md](./client/README.md) for instructions.
-
 ## Cleanup
 1. Open the <a href="https://us-west-2.console.aws.amazon.com/cloudformation/home" target="_blank">CloudFormation console</a>
 1. Locate a stack named *URLShortener*
