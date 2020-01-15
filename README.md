@@ -122,6 +122,8 @@ VUE_APP_NAME=<VueAppName>\
 ,VUE_APP_AUTH_DOMAIN=<VUE_APP_AUTH_DOMAIN>
 ```
 
+*Also available in the stack output as **AmplifyEnvironmentUpdateCommand***
+
 #### Option 2: Amplify Console page
 1. Open the [Amplify Console page](https://us-west-2.console.aws.amazon.com/amplify/home)
 1. On the left side, under **All apps**, choose *Url-Shortner-Client*
@@ -140,6 +142,12 @@ After deploying the CloudFormation template, you need to go into the Amplify Con
 
 ```bash
 aws amplify start-job --app-id <MyAmplifyAppId> --branch-name master --job-type RELEASE
+```
+*Also available in the stack output as **AmplifyDeployCommand***
+
+To check on the status, you can view it on the AWS Amplify Console or run:
+```bash
+aws amplify get-job --app-id <MyAmplifyAppId> --branch-name master --job-id <JobId>
 ```
 
 #### Option 2: Amplify Console page

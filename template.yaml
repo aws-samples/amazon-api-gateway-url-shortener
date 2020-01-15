@@ -265,7 +265,6 @@ Resources:
             Version: '2012-10-17'
             Statement:
               Action:
-              - dynamodb:PutItem
               - dynamodb:DeleteItem
               - dynamodb:UpdateItem
               Effect: Allow
@@ -344,8 +343,22 @@ Outputs:
 
   ClientDomainAddress:
     Description: Domain for client
-    Value: !Join [ ".", [ master, !GetAtt AmplifyApp.DefaultDomain ]]
+    Value: !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
 
   AmplifyAppId:
     Description: Amplify application ID
     Value: !GetAtt AmplifyApp.AppId
+  
+  AmplifyEnvironmentUpdateCommand:
+    Description: Command to add environment variables to the Amplify application
+    Value: !Sub
+      - aws amplify update-app --app-id ${AmplifyID} --environment-variables VUE_APP_NAME=${AppName},VUE_APP_CLIENT_ID=${UserPoolClient},VUE_APP_API_ROOT=${APIRoot},VUE_APP_AUTH_DOMAIN=${APIAuthDomain}
+      - AmplifyID: !GetAtt AmplifyApp.AppId
+        APIRoot: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
+        APIAuthDomain: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
+
+  AmplifyDeployCommand:
+    Description: Command to deploy the Amplify application
+    Value: !Sub
+      - aws amplify start-job --app-id ${AmplifyID} --branch-name master --job-type RELEASE
+      - AmplifyID: !GetAtt AmplifyApp.AppId
