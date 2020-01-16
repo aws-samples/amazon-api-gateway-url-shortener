@@ -344,6 +344,7 @@ components:
           type: string
         url:
           type: string
+          pattern: ^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)
       required:
         - id
         - url
@@ -354,6 +355,7 @@ components:
           type: string
         url:
           type: string
+          pattern: ^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)
         timestamp:
           type: string
         owner:
