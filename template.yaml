@@ -79,12 +79,15 @@ Resources:
           MetricsEnabled: true
           ThrottlingRateLimit: 2000
           ThrottlingBurstLimit: 1000
-        - HttpMethod: "GET"
-          ResourcePath: "/{linkId}"
-          ThrottlingRateLimit: 8000
-          ThrottlingBurstLimit: 4000
           CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
           CachingEnabled: !If [ AddCache, true, false ]
+        - HttpMethod: "GET"
+          ResourcePath: "/{linkId}"
+          ThrottlingRateLimit: 10000
+          ThrottlingBurstLimit: 4000
+        - HttpMethod: "GET"
+          ResourcePath: "/app"
+          CacheTtlInSeconds: !If [ AddCache, 0, !Ref "AWS::NoValue" ]
       DefinitionBody:
         'Fn::Transform':
           Name: 'AWS::Include'

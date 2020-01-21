@@ -16,7 +16,7 @@
 
 openapi: "3.0.1"
 info:
-  title: "URL Shortener"
+  title: "URL Shortener API"
   version: "1.0.0"
 
 x-amazon-apigateway-request-validators:
@@ -44,8 +44,8 @@ paths:
           required: true
           description: Short link ID for full URL
       responses:
-        "302":
-          description: "302 redirect"
+        "301":
+          description: "301 redirect"
           headers:
             Location:
               schema:
@@ -57,12 +57,14 @@ paths:
           Fn::GetAtt: [ DDBReadRole, Arn ]
         uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:dynamodb:action/GetItem"}
         httpMethod: "POST"
+        cacheKeyParameters:
+          - method.request.path.linkId
         requestTemplates:
           application/json: {"Fn::Sub": "{\"Key\": {\"id\": {\"S\": \"$input.params().path.linkId\"}}, \"TableName\": \"${LinkTable}\"}"}
         passthroughBehavior: "when_no_templates"
         responses:
           "200":
-            statusCode: "302"
+            statusCode: "301"
             responseParameters:
               method.response.header.Location: {"Fn::Sub": ["'master.${ampDomain}?error=url_not_found'", { "ampDomain": {"Fn::GetAtt":["AmplifyApp", "DefaultDomain"]} }]}
             responseTemplates:
