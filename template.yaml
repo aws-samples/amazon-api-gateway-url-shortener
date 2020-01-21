@@ -68,13 +68,15 @@ Resources:
       TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
-        Format: !If [ AddLogging, '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }', !Ref "AWS::NoValue" ]
+        Format: !If [ AddLogging, '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}', !Ref "AWS::NoValue" ]
       CacheClusterEnabled: !If [ AddCache, true, false]
       CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
       MethodSettings:
         - HttpMethod: "*"
           ResourcePath: "/*"
-          LoggingLevel: ERROR
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
           ThrottlingRateLimit: 2000
           ThrottlingBurstLimit: 1000
         - HttpMethod: "GET"

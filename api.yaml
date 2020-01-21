@@ -23,16 +23,19 @@ x-amazon-apigateway-request-validators:
   all:
     validateRequestBody: true
     validateRequestParameters: true
-  params-only:
+  params:
     validateRequestBody: false
     validateRequestParameters: true
+  body:
+    validateRequestBody: true
+    validateRequestParameters: false
 
 paths:
   /{linkId}:
     ## URL redirector
     get:
       summary: Get a url by ID and redirect
-      x-amazon-apigateway-request-validator: params-only
+      x-amazon-apigateway-request-validator: params
       parameters:
         - in: path
           name: linkId
@@ -117,7 +120,7 @@ paths:
       summary: Create new url
       security:
       - UserAuthorizer: []
-      x-amazon-apigateway-request-validator: all
+      x-amazon-apigateway-request-validator: body
       parameters:
         - $ref: '#/components/parameters/authHeader'
       requestBody:
@@ -211,7 +214,7 @@ paths:
       summary: Delete url
       security:
       - UserAuthorizer: []
-      x-amazon-apigateway-request-validator: params-only
+      x-amazon-apigateway-request-validator: params
       parameters:
         - $ref: '#/components/parameters/authHeader'
         - $ref: '#/components/parameters/linkIdHeader'
@@ -252,7 +255,7 @@ paths:
       summary: Update specific URL
       security:
       - UserAuthorizer: []
-      x-amazon-apigateway-request-validator: all
+      x-amazon-apigateway-request-validator: body
       requestBody:
         description: Optional description in *Markdown*
         required: true
