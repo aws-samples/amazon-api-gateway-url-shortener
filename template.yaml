@@ -24,19 +24,19 @@ Description: Functionless URL Shortner
 Parameters:
   AppName:
     Type: String
-    Description: Name of application (no spaces)
+    Description: Name of application (no spaces). Value must be globally unique
     Default: shortener
-  GithubRepository:
-    Type: String
-    Description: GitHub repository URL
-  OauthToken:
-    Type: String
-    Description: Github personal key
-    NoEcho: true
   UseLocalClient:
     Type: String
-    Description: For running local host for debugging
+    Description: Enables ppublic client and local client for testing. (Less secure)
     Default: 'false'
+  GithubRepository:
+    Type: String
+    Description: Forked GitHub repository URL
+  PersonalAcessToken:
+    Type: String
+    Description: Github personal access token
+    NoEcho: true
 
 ###################################################################################################
 ##   Template Conditions                                                                         ##
@@ -188,7 +188,7 @@ Resources:
       Name: Url-Shortner-Client
       Description: Basic client for URL Shortner
       Repository: https://github.com/aws-samples/amazon-api-gateway-url-shortener
-      AccessToken: !Ref OauthToken
+      AccessToken: !Ref PersonalAcessToken
       BuildSpec: |-
         version: 0.1
         frontend:

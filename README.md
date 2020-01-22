@@ -24,8 +24,8 @@ This app creates a URL shortener without using any compute. All business logic i
 * <a href="https://aws.amazon.com/cognito/" target="_blank">Amazon Cognito</a>
 * <a href="https://aws.amazon.com/dynamodb/" target="_bank">Amazon DynamoDB</a>
 * <a href="https://aws.amazon.com/amplify/console/" target="_blank">AWS Amplify Console</a>
-* <a href="https://aws.amazon.com/kinesis/data-firehose/" target="_blank">Amazon Kinesis Data Firehose</a> *optional*
-* <a href="https://aws.amazon.com/s3/" target="_blank">Amazon S3</a> *optional*
+* <a href="https://aws.amazon.com/cloudfront/" target="_blank">Amazon CloudFront</a> *Will cause a lengthy deployment time. See note under **Deploying**
+* <a href="https://aws.amazon.com/s3/" target="_blank">Amazon S3</a>
 
 
 ### Requirements for deployment
@@ -39,13 +39,15 @@ This app creates a URL shortener without using any compute. All business logic i
     **Be sure and store you new token in a place that you can find it.**
 
 ### Deploying
+
+***Note: This stack inclused an Amazon CloudFront distrobution which can take around 30 minutes to create. Don't be alarmed if the deploy seems to hang for a long time.***
 In the terminal, use the SAM CLI guided deployment the first time you deploy
 ```bash
 sam deploy -g
 ```
 
 #### Choose options
-You can choose the default for all options except *GithubRepository* and *OauthToken*. If you do not want caching or access logging, set them to `false`
+You can choose the default for all options except *GithubRepository* and **
 
 ```bash
 ## The name of the CloudFormation stack
@@ -54,20 +56,17 @@ Stack Name [URLShortener]:
 ## The region you want to deploy in
 AWS Region [us-west-2]:
 
-## The name of the application (lowercase no spaces)
-Parameter AppName [shortener]: 
+## The name of the application (lowercase no spaces). This must be globally uique
+Parameter AppName [shortener]:
 
-## Optional: enable a cache cluster with .5GB storage and a TTL of 300 seconds ( true | false )
-Parameter AddCache [true]:
-
-## Optional: enable access logging via Kinesis Firehose to an S3 bucket ( true | false )
-Parameter AddAccessLogging [true]:
+## Enables ppublic client and local client for testing. (Less secure)
+Parameter UseLocalClient [false]:
 
 ## GitHib forked repository URL
 Parameter GithubRepository []:
 
 ## Github Personal access token
-Parameter OauthToken:
+Parameter PersonalAccessToken:
 
 ## Shows you resources changes to be deployed and require a 'Y' to initiate deploy
 Confirm changes before deploy [y/N]: 
@@ -83,28 +82,11 @@ SAM will then deploy the AWS CloudFormation stack to your AWS account and provid
 
 After the first deploy you may redploy using `sam deploy` or redeploy with different options using `sam deploy -g`.
 
-### Access Logging
-Amazon Kinesis Data Firehose so Kinesis data analytics can be implemented if desired. The current log format is:
-```json
-{
-    "requestId":"$context.requestId",
-    "ip": "$context.identity.sourceIp",
-    "caller":"$context.identity.caller",
-    "user":"$context.identity.user",
-    "requestTime":"$context.requestTime",
-    "httpMethod":"$context.httpMethod",
-    "resourcePath":"$context.resourcePath",
-    "status":"$context.status",
-    "protocol":"$context.protocol",
-    "responseLength":"$context.responseLength"
-}
-```
-
-The format can be modified in the SAM template.yaml and be redeployed with `sam deploy`
-
-
 ## The Client
-The client is a Vusejs application that interfaces with the backend and allows you to authenticate and manage URL links. The client is hosted using Amplify Console. To avoid circular dependencies, we need to provide some information for the client after the rest of the stack is built. The information needed is provided at the end of the deploy process. If you do not have the information you can run the following:
+
+*The client can also be run locally for debugging. Instructions can be found [here](./client/README.md).*
+
+The client is a Vue.js application that interfaces with the backend and allows you to authenticate and manage URL links. The client is hosted using Amplify Console. To avoid circular dependencies, we need to provide some information for the client after stack is built. The information needed is provided at the end of the deploy process. If you do not have the information you can run the following:
 
 ```bash
 aws cloudformation describe-stacks --stack-name URLShortener
