@@ -26,20 +26,6 @@ Parameters:
     Type: String
     Description: Name of application (no spaces)
     Default: shortener
-  AddCache:
-    Type: String
-    Description: Enable Caching ( true | false )
-    Default: 'true'
-    AllowedValues:
-      - 'true'
-      - 'false'
-  AddAccessLogging:
-    Type: String
-    Description: Enable access logging to S3 via firehose ( true | false )
-    Default: 'true'
-    AllowedValues:
-      - 'true'
-      - 'false'
   GithubRepository:
     Type: String
     Description: GitHub repository URL
@@ -47,13 +33,16 @@ Parameters:
     Type: String
     Description: Github personal key
     NoEcho: true
+  UseLocalClient:
+    Type: String
+    Description: For running local host for debugging
+    Default: 'false'
 
 ###################################################################################################
 ##   Template Conditions                                                                         ##
 ###################################################################################################
 Conditions:
-  AddCache: { "Fn::Equals" : [{"Ref" : "AddCache"}, "true"]}
-  AddLogging: { "Fn::Equals" : [{"Ref" : "AddAccessLogging"}, "true"]}
+  IsLocal: { "Fn::Equals" : [{"Ref":"UseLocalClient"}, "true"]}
 
 ###################################################################################################
 ##   Template Resources                                                                          ##
@@ -64,13 +53,8 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
-      EndpointConfiguration: EDGE
+      EndpointConfiguration: REGIONAL
       TracingEnabled: true
-      AccessLogSetting:
-        DestinationArn: !If [ AddLogging, !GetAtt LogFireHose.Arn, !Ref "AWS::NoValue" ]
-        Format: !If [ AddLogging, '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}', !Ref "AWS::NoValue" ]
-      CacheClusterEnabled: !If [ AddCache, true, false]
-      CacheClusterSize: !If [ AddCache, "0.5", !Ref "AWS::NoValue" ]
       MethodSettings:
         - HttpMethod: "*"
           ResourcePath: "/*"
@@ -79,15 +63,10 @@ Resources:
           MetricsEnabled: true
           ThrottlingRateLimit: 2000
           ThrottlingBurstLimit: 1000
-          CacheTtlInSeconds: !If [ AddCache, 300, !Ref "AWS::NoValue" ]
-          CachingEnabled: !If [ AddCache, true, false ]
         - HttpMethod: "GET"
           ResourcePath: "/{linkId}"
           ThrottlingRateLimit: 10000
           ThrottlingBurstLimit: 4000
-        - HttpMethod: "GET"
-          ResourcePath: "/app"
-          CacheTtlInSeconds: !If [ AddCache, 0, !Ref "AWS::NoValue" ]
       DefinitionBody:
         'Fn::Transform':
           Name: 'AWS::Include'
@@ -136,7 +115,7 @@ Resources:
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties: 
-      Domain: !Ref AppName
+      Domain: !Sub ${AppName}-${AWS::AccountId}
       UserPoolId: !Ref UserPool
 
   ##   Cognito user pool client
@@ -150,8 +129,10 @@ Resources:
         - COGNITO
       CallbackURLs:
         - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
+        - !If [IsLocal, http://localhost:8080, !Ref "AWS::NoValue"]
       LogoutURLs:
         - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
+        - !If [IsLocal, http://localhost:8080, !Ref "AWS::NoValue"]
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
         - code
@@ -159,25 +140,46 @@ Resources:
         - email
         - openid
 
-  ##   S3 Bucket for optional logging
-  LogBucket:
-    Type: AWS::S3::Bucket   
-    Condition: AddLogging
+  ##   CloudFront distribution
+  CloudFrontDistro:
+    Type: AWS::CloudFront::Distribution
+    Properties: 
+      DistributionConfig:
+        Comment: URL Shortener CDN
+        DefaultCacheBehavior:
+          AllowedMethods: ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+          CachedMethods: ["GET", "HEAD", "OPTIONS"]
+          Compress: true
+          DefaultTTL: 0
+          ForwardedValues:
+            Headers:
+            - Access-Control-Request-Headers
+            - Access-Control-Request-Method
+            - Origin
+            - Authorization
+            QueryString: false
+          TargetOriginId: "URLShortenerAPIGW"
+          ViewerProtocolPolicy: redirect-to-https
+        CustomErrorResponses:
+        - ErrorCachingMinTTL: 0
+          ErrorCode: 400
+        - ErrorCachingMinTTL: 1
+          ErrorCode: 403
+        - ErrorCachingMinTTL: 5
+          ErrorCode: 500
+        Logging:
+          Bucket: !GetAtt CloudFrontAccessLogsBucket.DomainName
+        Enabled: true
+        Origins:
+          - CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+            DomainName: !Sub ${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com
+            Id: "URLShortenerAPIGW"
+            OriginPath: /Prod
 
-  ##   Kinesis Firehose for optional logging
-  LogFireHose:
-    Type: AWS::KinesisFirehose::DeliveryStream
-    Condition: AddLogging
-    Properties:
-      DeliveryStreamName: !Sub amazon-apigateway-${AppName}
-      S3DestinationConfiguration:
-        BucketARN: !GetAtt LogBucket.Arn
-        CompressionFormat: GZIP
-        RoleARN: !GetAtt S3BucketWrite.Arn
-        BufferingHints:
-          IntervalInSeconds: 60
-          SizeInMBs: 1
-
+  ##   CloudFront access logs storage
+  CloudFrontAccessLogsBucket:
+    Type: AWS::S3::Bucket
 
   ##   Amplify Application for hosting
   AmplifyApp:
@@ -273,34 +275,6 @@ Resources:
               Effect: Allow
               Resource: !GetAtt LinkTable.Arn
 
-  ##   S3 Bucket Write Policy
-  S3BucketWrite:
-    Type: "AWS::IAM::Role"
-    Condition: AddLogging
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Principal:
-              Service: "firehose.amazonaws.com"
-            Action: 
-              - "sts:AssumeRole"
-      Policies:
-        - PolicyName: S3WritePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              Action:
-                - s3:PutObject
-              Effect: Allow
-              Resource:
-                - !GetAtt LogBucket.Arn
-                - !Sub
-                  - ${Arn}/*
-                  - {Arn: !GetAtt LogBucket.Arn}
-
   ##   Amplify Hosting Role
   AmplifyRole:
     Type: AWS::IAM::Role
@@ -334,11 +308,11 @@ Outputs:
 
   VueAppAPIRoot:
     Description: API Gateway endpoint URL for linker
-    Value: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
+    Value: !GetAtt CloudFrontDistro.DomainName
  
   VueAppAuthDomain: 
     Description: Domain used for authentication
-    Value: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
+    Value: !Sub https://${AppName}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com
 
   VueAppClientId: 
     Description: Cognito User Pool Client Id
@@ -357,8 +331,8 @@ Outputs:
     Value: !Sub
       - aws amplify update-app --app-id ${AmplifyID} --environment-variables VUE_APP_NAME=${AppName},VUE_APP_CLIENT_ID=${UserPoolClient},VUE_APP_API_ROOT=${APIRoot},VUE_APP_AUTH_DOMAIN=${APIAuthDomain}
       - AmplifyID: !GetAtt AmplifyApp.AppId
-        APIRoot: !Sub https://${SiteAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod
-        APIAuthDomain: !Sub https://${AppName}.auth.${AWS::Region}.amazoncognito.com
+        APIRoot: !Join [":", [ "https://", !GetAtt CloudFrontDistro.DomainName]]
+        APIAuthDomain: !Sub https://${AppName}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com
 
   AmplifyDeployCommand:
     Description: Command to deploy the Amplify application
