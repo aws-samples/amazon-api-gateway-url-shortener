@@ -41,9 +41,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
           </header>
           <div class="card-content">
             <div class="content">
-              {{link.url}}
+              <div class="text-clip" :title="link.url">
+                {{link.url}}
+              </div>
               <div class="is-size-7">
-              <time>{{link.timestamp | formatDate}}</time>
+                <time>{{link.timestamp | formatDate}}</time>
               </div>
             </div>
           </div>
