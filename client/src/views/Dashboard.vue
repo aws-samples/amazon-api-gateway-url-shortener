@@ -80,6 +80,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
                 <input class="input" v-model="model.url" type="text" placeholder="Url (Ex: http://mylink.com)" required>
               </div>
             </div>
+            <p class="is-italic has-text-info is-size-7" v-if="!modalTypeCreate">
+              Note: Updates take a minimum of 5 minutes to propogate. You may also need to clear your local cache.
+            </p>
           </section>
           <footer class="modal-card-foot">
             <button v-if="modalTypeCreate" v-on:click="createLink()" class="button is-success">Create</button>
