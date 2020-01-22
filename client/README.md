@@ -27,6 +27,9 @@ npm install -g @vue/cli
 ```
 
 ## Setup
+
+**In order for the local client to work for testing, be sure and set the *UseLocalClient* option when launching the backend stack**
+
 **The following commands need to be run from within the `client` folder.**
 
 ### 1. Update the environment variables in the `.env` file.
