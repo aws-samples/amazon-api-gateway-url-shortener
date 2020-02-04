@@ -66,7 +66,7 @@ paths:
             statusCode: "301"
             responseParameters:
               method.response.header.Location: {"Fn::Sub": ["'master.${ampDomain}?error=url_not_found'", { "ampDomain": {"Fn::GetAtt":["AmplifyApp", "DefaultDomain"]} }]}
-              method.response.header.Cache-Control: "'Cache-Control: max-age=300'"
+              method.response.header.Cache-Control: "'max-age=300'"
             responseTemplates:
               application/json: "#set($inputRoot = $input.path('$')) \
                 #if($inputRoot.toString().contains(\"Item\")) \
