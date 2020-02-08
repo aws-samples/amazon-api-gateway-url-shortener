@@ -298,6 +298,140 @@ Resources:
                 Resource: "*"
 
 ###################################################################################################
+##   Metrics outputs                                                                            ##
+###################################################################################################
+
+  NotifyTopic:
+    Type: AWS::SNS::Topic
+
+  APIGateway4xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "URL Shortener API 4xx Alarm"
+      AlarmDescription: "4xx monitor"
+      MetricName: "4XXError"
+      Namespace: "AWS/ApiGateway"
+      Dimensions:
+          - Name: "ApiName"
+            Value: "URL Shortener API"
+      Statistic: "Average"
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: .01
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions:
+        - !Ref NotifyTopic
+
+  APIGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "URL Shortener API 5xx Alarm"
+      AlarmDescription: "5xx monitor"
+      MetricName: "5XXError"
+      Namespace: "AWS/ApiGateway"
+      Dimensions:
+          - Name: "ApiName"
+            Value: "URL Shortener API"
+      Statistic: "Average"
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: .01
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions:
+        - !Ref NotifyTopic
+
+  APIGatewayLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "URL Shortener API Latency Alarm"
+      AlarmDescription: "Latency monitor"
+      MetricName: "Latency"
+      Namespace: "AWS/ApiGateway"
+      Dimensions:
+          - Name: "ApiName"
+            Value: "URL Shortener API"
+      ExtendedStatistic: "p99"
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 75
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions:
+        - !Ref NotifyTopic
+
+  DDBSystemErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "URL Shortener DDB 5xx Alarm"
+      AlarmDescription: "System monitor"
+      MetricName: "SystemErrors"
+      Namespace: "AWS/DynamoDB"
+      Dimensions:
+          - Name: "TableName"
+            Value: !Ref LinkTable
+      Statistic: "Average"
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: .01
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions:
+        - !Ref NotifyTopic
+
+  DDBUserErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "URL Shortener DDB 4xx Alarm"
+      AlarmDescription: "User monitor"
+      MetricName: "UserErrors"
+      Namespace: "AWS/DynamoDB"
+      Dimensions:
+          - Name: "TableName"
+            Value: !Ref LinkTable
+      Statistic: "Average"
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: .10
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions:
+        - !Ref NotifyTopic
+
+  CloudFrontTotalErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "Url Shortener CloudFront Errors"
+      AlarmDescription: "CDN error monitor"
+      MetricName: TotalErrorRate
+      Namespace: AWS/CloudFront
+      Dimensions:
+        - Name: DistributionId
+          Value: !Ref CloudFrontDistro
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: 5
+      AlarmActions:
+        - !Ref NotifyTopic
+
+  CloudFrontTotalCacheHitRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "Url Shortener CloudFront Cache Hit Rate"
+      AlarmDescription: "CDN eache monitor"
+      MetricName: CacheHitRate
+      Namespace: AWS/CloudFront
+      Dimensions:
+        - Name: DistributionId
+          Value: !Ref CloudFrontDistro
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Threshold: .80
+      AlarmActions:
+        - !Ref NotifyTopic
+
+
+###################################################################################################
 ##   Template outputs                                                                            ##
 ###################################################################################################
 
