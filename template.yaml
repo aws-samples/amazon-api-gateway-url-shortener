@@ -358,7 +358,7 @@ Resources:
       AlarmActions:
         - !Ref NotifyTopic
 
-  DDBSystemErrorAlarm:
+  DDB5xxAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: "URL Shortener DDB 5xx Alarm"
@@ -376,7 +376,7 @@ Resources:
       AlarmActions:
         - !Ref NotifyTopic
 
-  DDBUserErrorAlarm:
+  DDB4xxAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: "URL Shortener DDB 4xx Alarm"
