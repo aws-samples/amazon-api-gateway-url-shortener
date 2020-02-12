@@ -209,7 +209,7 @@ Resources:
               - node_modules/**/*
       IAMServiceRole: !GetAtt AmplifyRole.Arn
 
-  ##   Amolify Branch for hosting
+  ##   Amplify Branch for hosting
   AmplifyBranch:
     Type: AWS::Amplify::Branch
     Properties:
