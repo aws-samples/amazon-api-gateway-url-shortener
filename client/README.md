@@ -17,6 +17,8 @@
 # URL Shortener Client
 This application is a simple Vuejs application that interacts with the functionless url shortener.
 
+![Personal access token scopes](../assets/client.png)
+
 ## Requirements
 * [Node](https://nodejs.org)
 * [Vue CLI](https://cli.vuejs.org/)
