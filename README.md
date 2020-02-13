@@ -17,6 +17,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. -->
 # Functionless URL Shortener
 This app creates a URL shortener without using any compute. All business logic is handled at the Amazon API Gateway level. The basic app will create an API Gateway instance utilizing Cognito for authentication and authorization. It will also create an Amazon DynamoDB table for data storage. It will also create a simple Vuejs application as a demo client.
 
+Read the blog series about this application:
+1. ![Building a serverless URL shortener app without AWS Lambda – part 1](https://aws.amazon.com/blogs/compute/building-a-serverless-url-shortener-app-without-lambda-part-1)
+1. ![Building a serverless URL shortener app without AWS Lambda – part 2](https://aws.amazon.com/blogs/compute/building-a-serverless-url-shortener-app-without-lambda-part-2)
+1. ![Building a serverless URL shortener app without AWS Lambda – part 3](https://aws.amazon.com/blogs/compute/building-a-serverless-url-shortener-app-without-lambda-part-3)
+
 ## The Backend
 
 ### Services Used
