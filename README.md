@@ -45,7 +45,7 @@ Read the blog series about this application:
 
 ### Deploying
 
-***Note: This stack inclused an Amazon CloudFront distrobution which can take around 30 minutes to create. Don't be alarmed if the deploy seems to hang for a long time.***
+***Note: This stack includes an Amazon CloudFront distribution which can take around 30 minutes to create. Don't be alarmed if the deploy seems to hang for a long time.***
 In the terminal, use the SAM CLI guided deployment the first time you deploy
 ```bash
 sam deploy -g
