@@ -61,19 +61,19 @@ Stack Name [URLShortener]:
 ## The region you want to deploy in
 AWS Region [us-west-2]:
 
-## The name of the application (lowercase no spaces). This must be globally uique
+## The name of the application (lowercase no spaces). This must be globally unique
 Parameter AppName [shortener]:
 
-## Enables ppublic client and local client for testing. (Less secure)
+## Enables public client and local client for testing. (Less secure)
 Parameter UseLocalClient [false]:
 
-## GitHib forked repository URL
+## GitHub forked repository URL
 Parameter GithubRepository []:
 
 ## Github Personal access token
 Parameter PersonalAccessToken:
 
-## Shows you resources changes to be deployed and require a 'Y' to initiate deploy
+## Shows you resources changes to be deployed and requires a 'Y' to initiate deploy
 Confirm changes before deploy [y/N]: 
 
 ## SAM needs permission to be able to create roles to connect to the resources in your template
@@ -85,7 +85,7 @@ Save arguments to samconfig.toml [Y/n]:
 
 SAM will then deploy the AWS CloudFormation stack to your AWS account and provide required outputs for the included client.
 
-After the first deploy you may redploy using `sam deploy` or redeploy with different options using `sam deploy -g`.
+After the first deploy you may re-deploy using `sam deploy` or redeploy with different options using `sam deploy -g`.
 
 ## The Client
 
