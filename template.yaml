@@ -42,7 +42,8 @@ Parameters:
 ##   Template Conditions                                                                         ##
 ###################################################################################################
 Conditions:
-  IsLocal: { "Fn::Equals" : [{"Ref":"UseLocalClient"}, "true"]}
+  IsLocal:
+    !Equals [!Ref UseLocalClient, 'true']
 
 ###################################################################################################
 ##   Template Resources                                                                          ##
