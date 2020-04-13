@@ -186,9 +186,9 @@ Resources:
   AmplifyApp:
     Type: AWS::Amplify::App
     Properties:
-      Name: Url-Shortner-Client
+      Name: Url-Shortener-Client
       Description: Basic client for URL Shortner
-      Repository: https://github.com/aws-samples/amazon-api-gateway-url-shortener
+      Repository: !Ref GithubRepository
       AccessToken: !Ref PersonalAcessToken
       BuildSpec: |-
         version: 0.1
