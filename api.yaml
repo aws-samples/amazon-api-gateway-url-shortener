@@ -293,11 +293,11 @@ paths:
         requestTemplates:
           application/json: { "Fn::Sub": "{\"TableName\": \"${LinkTable}\",\
             \"Key\": {\"id\": {\"S\": $input.json('$.id')}}, \
-            \"ExpressionAttributeNames\": {\"#u\": \"url\", \"#owner\": \"owner\"}, \
-            \"ExpressionAttributeValues\":{\":u\": {\"S\": $input.json('$.url')}, \":owner\": {\"S\": \"$context.authorizer.claims.email\"}}, \
+            \"ExpressionAttributeNames\": {\"#u\": \"url\", \"#owner\": \"owner\", \"#id\":\"id\"}, \
+            \"ExpressionAttributeValues\":{\":u\": {\"S\": $input.json('$.url')}, \":owner\": {\"S\": \"$context.authorizer.claims.email\"}, \":linkId\":{\"S\":\"$input.params().path.linkId\"}}, \
             \"UpdateExpression\": \"SET #u = :u\", \
             \"ReturnValues\": \"ALL_NEW\", \
-            \"ConditionExpression\": \"#owner = :owner\"}" }
+            \"ConditionExpression\": \"#owner = :owner AND #id = :linkId\"}" }
         passthroughBehavior: "when_no_templates"
         responses:
           "200":
