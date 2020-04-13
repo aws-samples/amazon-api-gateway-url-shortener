@@ -1,0 +1,7 @@
+#set($inputRoot = $input.path('$'))
+{
+  "id": "$inputRoot.Attributes.id.S",
+  "url": "$inputRoot.Attributes.url.S",
+  "timestamp": "$inputRoot.Attributes.timestamp.S",
+  "owner": "$inputRoot.Attributes.owner.S"
+}
