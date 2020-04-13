@@ -1,5 +1,5 @@
 {
-  "TableName": "SlipLink-LinkTable-A2SD9C321JCE",
+  "TableName": "Shortie",
   "Key": {
     "id": {
       "S": $input.json('$.id')
@@ -7,17 +7,21 @@
   },
   "ExpressionAttributeNames": {
     "#u": "url",
-    "#owner": "owner"
+    "#owner": "owner",
+    "#id":"id"
   },
   "ExpressionAttributeValues": {
     ":u": {
       "S": $input.json('$.url')
     },
     ":owner": {
-      "S": "$context.authorizer.claims.email"
+      "S": "ericdj@amazon.com"
+    },
+    ":linkId": {
+        "S": "$input.params().path.linkId"
     }
   },
   "UpdateExpression": "SET #u = :u",
   "ReturnValues": "ALL_NEW",
-  "ConditionExpression": "#owner = :owner"
+  "ConditionExpression": "#owner = :owner AND #id = :linkId"
 }
