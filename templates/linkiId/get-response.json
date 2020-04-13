@@ -1,0 +1,4 @@
+#set($inputRoot = $input.path('$'))
+#if ($inputRoot.toString().contains("Item"))
+  #set($context.responseOverride.header.Location = $inputRoot.Item.url.S)
+#end

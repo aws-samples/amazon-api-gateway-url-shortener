@@ -1,0 +1,17 @@
+{
+  "Key": {
+    "id": {
+      "S": "$input.params().path.linkId"
+    }
+  },
+  "TableName": "SlipLink-LinkTable-A2SD9C321JCE",
+  "ConditionExpression": "#owner = :owner",
+  "ExpressionAttributeValues": {
+    ":owner": {
+      "S": "$context.authorizer.claims.email"
+    }
+  },
+  "ExpressionAttributeNames": {
+    "#owner": "owner"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "TableName": "SlipLink-LinkTable-A2SD9C321JCE",
+  "Key": {
+    "id": {
+      "S": $input.json('$.id')
+    }
+  },
+  "ExpressionAttributeNames": {
+    "#u": "url",
+    "#owner": "owner"
+  },
+  "ExpressionAttributeValues": {
+    ":u": {
+      "S": $input.json('$.url')
+    },
+    ":owner": {
+      "S": "$context.authorizer.claims.email"
+    }
+  },
+  "UpdateExpression": "SET #u = :u",
+  "ReturnValues": "ALL_NEW",
+  "ConditionExpression": "#owner = :owner"
+}

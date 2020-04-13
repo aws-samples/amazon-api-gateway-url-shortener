@@ -1,0 +1,13 @@
+{
+  "TableName": "SlipLink-LinkTable-A2SD9C321JCE",
+  "IndexName": "OwnerIndex",
+  "KeyConditionExpression": "#n_owner = :v_owner",
+  "ExpressionAttributeValues": {
+    ":v_owner": {
+      "S": "$context.authorizer.claims.email"
+    }
+  },
+  "ExpressionAttributeNames": {
+    "#n_owner": "owner"
+  }
+}

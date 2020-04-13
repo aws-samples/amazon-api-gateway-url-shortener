@@ -1,0 +1,27 @@
+{
+  "TableName": "SlipLink-LinkTable-A2SD9C321JCE",
+  "ConditionExpression": "attribute_not_exists(id)",
+  "Key": {
+    "id": {
+      "S": $input.json('$.id')
+    }
+  },
+  "ExpressionAttributeNames": {
+    "#u": "url",
+    "#o": "owner",
+    "#ts": "timestamp"
+  },
+  "ExpressionAttributeValues": {
+    ":u": {
+      "S": $input.json('$.url')
+    },
+    ":o": {
+      "S": "$context.authorizer.claims.email"
+    },
+    ":ts": {
+      "S": "$context.requestTime"
+    }
+  },
+  "UpdateExpression": "SET #u = :u, #o = :o, #ts = :ts",
+  "ReturnValues": "ALL_NEW"
+}
