@@ -28,7 +28,7 @@ Parameters:
     Default: shortener
   UseLocalClient:
     Type: String
-    Description: Enables ppublic client and local client for testing. (Less secure)
+    Description: Enables public client and local client for testing. (Less secure)
     Default: 'false'
   GithubRepository:
     Type: String
@@ -466,7 +466,7 @@ Outputs:
     Value: !Sub
       - aws amplify update-app --app-id ${AmplifyID} --environment-variables VUE_APP_NAME=${AppName},VUE_APP_CLIENT_ID=${UserPoolClient},VUE_APP_API_ROOT=${APIRoot},VUE_APP_AUTH_DOMAIN=${APIAuthDomain}
       - AmplifyID: !GetAtt AmplifyApp.AppId
-        APIRoot: !Join [":", [ "https://", !GetAtt CloudFrontDistro.DomainName]]
+        APIRoot: !Join ["", [ "https://", !GetAtt CloudFrontDistro.DomainName]]
         APIAuthDomain: !Sub https://${AppName}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com
 
   AmplifyDeployCommand:

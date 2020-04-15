@@ -15,7 +15,7 @@
       "S": $input.json('$.url')
     },
     ":owner": {
-      "S": "ericdj@amazon.com"
+      "S": "$context.authorizer.claims.email"
     },
     ":linkId": {
         "S": "$input.params().path.linkId"
