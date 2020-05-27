@@ -28,7 +28,7 @@ Parameters:
     Default: shortener
   UseLocalClient:
     Type: String
-    Description: Enables ppublic client and local client for testing. (Less secure)
+    Description: Enables public client and local client for testing. (Less secure)
     Default: 'false'
   GithubRepository:
     Type: String
