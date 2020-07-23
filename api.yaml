@@ -102,7 +102,7 @@ paths:
           application/json: { "Fn::Sub": "{\"TableName\": \"${LinkTable}\", \
             \"IndexName\":\"OwnerIndex\",\"KeyConditionExpression\": \"#n_owner = :v_owner\", \
             \"ExpressionAttributeValues\": \
-            {\":v_owner\": {\"S\": \"$context.authorizer.claims.email\"}},\"ExpressionAttributeNames\": {\"#n_owner\": \"owner\"}}"}
+            {\":v_owner\": {\"S\": $input.json('$.owner')}},\"ExpressionAttributeNames\": {\"#n_owner\": \"owner\"}}"}
         passthroughBehavior: "when_no_templates"
         responses:
           "200":
@@ -159,7 +159,7 @@ paths:
             \"ConditionExpression\":\"attribute_not_exists(id)\", \
             \"Key\": {\"id\": {\"S\": $input.json('$.id')}}, \
             \"ExpressionAttributeNames\": {\"#u\": \"url\",\"#o\": \"owner\",\"#ts\": \"timestamp\"}, \
-            \"ExpressionAttributeValues\":{\":u\": {\"S\": $input.json('$.url')},\":o\": {\"S\": \"$context.authorizer.claims.email\"},\":ts\": {\"S\": \"$context.requestTime\"}}, \
+            \"ExpressionAttributeValues\":{\":u\": {\"S\": $input.json('$.url')},\":o\": {\"S\": $input.json('$.owner')},\":ts\": {\"S\": \"$context.requestTime\"}}, \
             \"UpdateExpression\": \"SET #u = :u, #o = :o, #ts = :ts\", \
             \"ReturnValues\": \"ALL_NEW\"}" }
         passthroughBehavior: "when_no_templates"
@@ -243,7 +243,7 @@ paths:
           application/json: { "Fn::Sub":  "{\"Key\": {\"id\": {\"S\": \"$input.params().path.linkId\"}}, \
             \"TableName\": \"${LinkTable}\", \
             \"ConditionExpression\": \"#owner = :owner\", \
-            \"ExpressionAttributeValues\":{\":owner\": {\"S\": \"$context.authorizer.claims.email\"}}, \
+            \"ExpressionAttributeValues\":{\":owner\": {\"S\": $input.json('$.owner')}}, \
             \"ExpressionAttributeNames\": {\"#owner\": \"owner\"}}" }
         passthroughBehavior: "when_no_templates"
         responses:
@@ -294,7 +294,7 @@ paths:
           application/json: { "Fn::Sub": "{\"TableName\": \"${LinkTable}\",\
             \"Key\": {\"id\": {\"S\": $input.json('$.id')}}, \
             \"ExpressionAttributeNames\": {\"#u\": \"url\", \"#owner\": \"owner\", \"#id\":\"id\"}, \
-            \"ExpressionAttributeValues\":{\":u\": {\"S\": $input.json('$.url')}, \":owner\": {\"S\": \"$context.authorizer.claims.email\"}, \":linkId\":{\"S\":\"$input.params().path.linkId\"}}, \
+            \"ExpressionAttributeValues\":{\":u\": {\"S\": $input.json('$.url')}, \":owner\": {\"S\": $input.json('$.owner')}, \":linkId\":{\"S\":\"$input.params().path.linkId\"}}, \
             \"UpdateExpression\": \"SET #u = :u\", \
             \"ReturnValues\": \"ALL_NEW\", \
             \"ConditionExpression\": \"#owner = :owner AND #id = :linkId\"}" }
@@ -354,9 +354,12 @@ components:
         url:
           type: string
           pattern: ^https?://[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)
+        owner:
+          type: string  
       required:
         - id
         - url
+        - owner
     PutBody:
       type: object
       properties:
