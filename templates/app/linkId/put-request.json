@@ -2,7 +2,7 @@
   "TableName": "Shortie",
   "Key": {
     "id": {
-      "S": $input.json('$.id')
+      "S": $input.json('$.id') + "_" + $context.authorizer.claims.email
     }
   },
   "ExpressionAttributeNames": {
@@ -15,7 +15,7 @@
       "S": $input.json('$.url')
     },
     ":owner": {
-      "S": "ericdj@amazon.com"
+      "S": "$context.authorizer.claims.email"
     },
     ":linkId": {
         "S": "$input.params().path.linkId"

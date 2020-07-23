@@ -3,7 +3,7 @@
   "ConditionExpression": "attribute_not_exists(id)",
   "Key": {
     "id": {
-      "S": $input.json('$.id')
+      "S": $input.json('$.id') + "_" + $context.authorizer.claims.email
     }
   },
   "ExpressionAttributeNames": {
