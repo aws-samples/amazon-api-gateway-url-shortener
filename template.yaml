@@ -37,13 +37,17 @@ Parameters:
     Type: String
     Description: Github personal access token
     NoEcho: true
+  CustomDomain:
+    Type: String
+    Description: Cstom domain added to client # only configures cognito for now. Manually handle domain on amplify console for client
+    Default: none
 
 ###################################################################################################
 ##   Template Conditions                                                                         ##
 ###################################################################################################
 Conditions:
-  IsLocal:
-    !Equals [!Ref UseLocalClient, 'true']
+  IsLocal: !Equals [!Ref UseLocalClient, 'true']
+  HasCustomDomain: !Not [!Equals [!Ref CustomDomain, 'none']]
 
 ###################################################################################################
 ##   Template Resources                                                                          ##
@@ -131,9 +135,11 @@ Resources:
       CallbackURLs:
         - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
         - !If [IsLocal, http://localhost:8080, !Ref "AWS::NoValue"]
+        - !If [HasCustomDomain, !Ref CustomDomain, !Ref "AWS::NoValue"]
       LogoutURLs:
         - !Join [ ".", [ https://master, !GetAtt AmplifyApp.DefaultDomain ]]
         - !If [IsLocal, http://localhost:8080, !Ref "AWS::NoValue"]
+        - !If [HasCustomDomain, !Ref CustomDomain, !Ref "AWS::NoValue"]
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
         - code
