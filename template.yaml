@@ -470,7 +470,7 @@ Outputs:
 
   VueAppAPIRoot:
     Description: API Gateway endpoint URL for linker
-    Value: !GetAtt CloudFrontDistro.DomainName
+    Value: !Sub "https://${CloudFrontDistro.DomainName}"
  
   VueAppAuthDomain: 
     Description: Domain used for authentication
